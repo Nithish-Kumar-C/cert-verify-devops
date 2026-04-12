@@ -98,7 +98,11 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
+    "http://localhost",
+    "http://127.0.0.1",
 ]
+
+CORS_ALLOW_CREDENTIALS = True
 
 # ── Email (Gmail SMTP) ────────────────────────────────────────
 EMAIL_BACKEND      = "django.core.mail.backends.smtp.EmailBackend"

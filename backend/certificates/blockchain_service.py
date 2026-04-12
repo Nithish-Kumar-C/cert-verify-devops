@@ -87,7 +87,7 @@ def issue_on_blockchain(cert_hash_hex: str, student_name: str,
     ).build_transaction({
         "from":     account.address,
         "nonce":    w3.eth.get_transaction_count(account.address),
-        "gas":      200000,
+        "gas":      500000,
         "gasPrice": w3.eth.gas_price,
     })
 

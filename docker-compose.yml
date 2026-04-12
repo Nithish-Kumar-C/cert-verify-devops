@@ -37,6 +37,7 @@ services:
     environment:
       DB_HOST: db
       DB_PORT: 3306
+      ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
     ports:
       - "8000:8000"
     depends_on:
@@ -60,6 +61,8 @@ services:
       - backend
     networks:
       - certverify-network
+    volumes:
+      - static_files:/app/staticfiles
 
 # ── Named Volumes ───────────────────────────────────────────
 volumes:
