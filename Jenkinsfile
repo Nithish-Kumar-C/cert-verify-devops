@@ -33,11 +33,17 @@ pipeline {
                     string(credentialsId: 'aws-account-id', variable: 'AWS_ACCOUNT_ID')
                 ]) {
                     powershell '''
+                        $env:AWS_ACCESS_KEY_ID = $env:AWS_ACCESS_KEY_ID
+                        $env:AWS_SECRET_ACCESS_KEY = $env:AWS_SECRET_ACCESS_KEY
                         $env:AWS_DEFAULT_REGION = "ap-southeast-1"
                         $ecrUrl = "$env:AWS_ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com"
                         
-                        $password = aws ecr get-login-password --region ap-southeast-1
+                        Write-Host "Logging into ECR..."
+                        $password = & aws ecr get-login-password --region ap-southeast-1
+                        if ($LASTEXITCODE -ne 0) { exit 1 }
+                        
                         $password | docker login --username AWS --password-stdin $ecrUrl
+                        if ($LASTEXITCODE -ne 0) { exit 1 }
                         
                         docker tag certverify-backend:latest "$ecrUrl/certverify-backend:latest"
                         docker tag certverify-frontend:latest "$ecrUrl/certverify-frontend:latest"
