@@ -28,8 +28,15 @@ pipeline {
         
         stage('Push to ECR') {
             steps {
-                withAWS(credentials: 'aws-credentials', region: 'ap-southeast-1') {
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'aws-credentials',
+                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                ]]) {
                     powershell """
+                        \$env:AWS_ACCESS_KEY_ID = '$env:AWS_ACCESS_KEY_ID'
+                        \$env:AWS_SECRET_ACCESS_KEY = '$env:AWS_SECRET_ACCESS_KEY'
                         \$password = aws ecr get-login-password --region $env:AWS_REGION
                         \$password | docker login --username AWS --password-stdin "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com"
                         docker tag certverify-backend:latest "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-backend:latest"
