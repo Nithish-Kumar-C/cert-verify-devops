@@ -33,25 +33,28 @@ pipeline {
                     string(credentialsId: 'aws-account-id', variable: 'AWS_ACCOUNT_ID')
                 ]) {
                     powershell '''
-                        $env:AWS_DEFAULT_REGION = "ap-southeast-1"
-                        $accountId = $env:AWS_ACCOUNT_ID
                         $region = "ap-southeast-1"
+                        $accountId = $env:AWS_ACCOUNT_ID
                         $ecrUrl = "$accountId.dkr.ecr.$region.amazonaws.com"
                         
-                        Write-Host "ECR URL: $ecrUrl"
-                        Write-Host "Getting ECR password..."
+                        # Set credentials explicitly for aws cli
+                        $env:AWS_ACCESS_KEY_ID = $env:AWS_ACCESS_KEY_ID
+                        $env:AWS_SECRET_ACCESS_KEY = $env:AWS_SECRET_ACCESS_KEY
+                        $env:AWS_DEFAULT_REGION = $region
                         
-                        $password = (aws ecr get-login-password --region ap-southeast-1)
+                        Write-Host "Testing AWS credentials..."
+                        aws sts get-caller-identity
                         
-                        Write-Host "Logging into ECR..."
-                        Write-Output $password | docker login --username AWS --password-stdin $ecrUrl
+                        Write-Host "Getting ECR token..."
+                        $token = aws ecr get-login-password --region $region
                         
-                        if ($LASTEXITCODE -ne 0) { 
-                            Write-Host "Login failed!"
-                            exit 1 
-                        }
+                        Write-Host "Token length: $($token.Length)"
+                        Write-Host "Logging into ECR: $ecrUrl"
                         
-                        Write-Host "Tagging and pushing images..."
+                        $token | docker login --username AWS --password-stdin $ecrUrl
+                        
+                        if ($LASTEXITCODE -ne 0) { exit 1 }
+                        
                         docker tag certverify-backend:latest "$ecrUrl/certverify-backend:latest"
                         docker tag certverify-frontend:latest "$ecrUrl/certverify-frontend:latest"
                         docker push "$ecrUrl/certverify-backend:latest"
