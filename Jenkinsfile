@@ -1,11 +1,6 @@
 pipeline {
     agent any
     
-    environment {
-        AWS_ACCOUNT_ID = '794383793240'
-        AWS_REGION = 'ap-southeast-1'
-    }
-    
     stages {
         stage('Checkout') {
             steps {
@@ -28,22 +23,27 @@ pipeline {
         
         stage('Push to ECR') {
             steps {
-                withCredentials([[
-                    $class: 'AmazonWebServicesCredentialsBinding',
-                    credentialsId: 'aws-credentials',
-                    accessKeyVariable: 'AWS_ACCESS_KEY_ID',
-                    secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
-                ]]) {
-                    powershell """
-                        \$env:AWS_ACCESS_KEY_ID = '$env:AWS_ACCESS_KEY_ID'
-                        \$env:AWS_SECRET_ACCESS_KEY = '$env:AWS_SECRET_ACCESS_KEY'
-                        \$password = aws ecr get-login-password --region $env:AWS_REGION
-                        \$password | docker login --username AWS --password-stdin "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com"
-                        docker tag certverify-backend:latest "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-backend:latest"
-                        docker tag certverify-frontend:latest "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-frontend:latest"
-                        docker push "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-backend:latest"
-                        docker push "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-frontend:latest"
-                    """
+                withCredentials([
+                    [
+                        $class: 'AmazonWebServicesCredentialsBinding',
+                        credentialsId: 'aws-credentials',
+                        accessKeyVariable: 'AWS_ACCESS_KEY_ID',
+                        secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+                    ],
+                    string(credentialsId: 'aws-account-id', variable: 'AWS_ACCOUNT_ID')
+                ]) {
+                    powershell '''
+                        $env:AWS_DEFAULT_REGION = "ap-southeast-1"
+                        $ecrUrl = "$env:AWS_ACCOUNT_ID.dkr.ecr.ap-southeast-1.amazonaws.com"
+                        
+                        $password = aws ecr get-login-password --region ap-southeast-1
+                        $password | docker login --username AWS --password-stdin $ecrUrl
+                        
+                        docker tag certverify-backend:latest "$ecrUrl/certverify-backend:latest"
+                        docker tag certverify-frontend:latest "$ecrUrl/certverify-frontend:latest"
+                        docker push "$ecrUrl/certverify-backend:latest"
+                        docker push "$ecrUrl/certverify-frontend:latest"
+                    '''
                 }
             }
         }
