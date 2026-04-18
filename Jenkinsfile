@@ -16,25 +16,26 @@ pipeline {
         
         stage('Build Backend') {
             steps {
-                bat 'docker build -t certverify-backend ./backend'
+                powershell 'docker build -t certverify-backend ./backend'
             }
         }
         
         stage('Build Frontend') {
             steps {
-                bat 'docker build -t certverify-frontend ./frontend'
+                powershell 'docker build -t certverify-frontend ./frontend'
             }
         }
         
         stage('Push to ECR') {
             steps {
                 withAWS(credentials: 'aws-credentials', region: 'ap-southeast-1') {
-                    bat """
-                        aws ecr get-login-password --region %AWS_REGION% | docker login --username AWS --password-stdin %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com
-                        docker tag certverify-backend:latest %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com/certverify-backend:latest
-                        docker tag certverify-frontend:latest %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com/certverify-frontend:latest
-                        docker push %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com/certverify-backend:latest
-                        docker push %AWS_ACCOUNT_ID%.dkr.ecr.%AWS_REGION%.amazonaws.com/certverify-frontend:latest
+                    powershell """
+                        \$password = aws ecr get-login-password --region $env:AWS_REGION
+                        \$password | docker login --username AWS --password-stdin "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com"
+                        docker tag certverify-backend:latest "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-backend:latest"
+                        docker tag certverify-frontend:latest "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-frontend:latest"
+                        docker push "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-backend:latest"
+                        docker push "$env:AWS_ACCOUNT_ID.dkr.ecr.$env:AWS_REGION.amazonaws.com/certverify-frontend:latest"
                     """
                 }
             }
