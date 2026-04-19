@@ -43,3 +43,7 @@ Thumbs.db
 terraform/.terraform/
 terraform/terraform.tfstate
 terraform/terraform.tfstate.backup
+
+# Ansible
+ansible/*.retry
+ansible/__pycache__/

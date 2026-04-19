@@ -1,0 +1,23 @@
+---
+- name: Configure CertVerify server
+  hosts: local
+  become: yes
+
+  tasks:
+    - name: Update apt packages
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Install curl
+      apt:
+        name: curl
+        state: present
+
+    - name: Print success message
+      debug:
+        msg: "Server configured successfully!"
