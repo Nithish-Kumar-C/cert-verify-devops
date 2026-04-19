@@ -38,36 +38,31 @@ pipeline {
                         $ecrUrl = "$accountId.dkr.ecr.$region.amazonaws.com"
 
                         Write-Host "ECR URL: $ecrUrl"
-                        Write-Host "Getting ECR token..."
 
-                        # Save token to temp file
-                        $tokenFile = "$env:TEMP\\ecr_token.txt"
-                        aws ecr get-login-password --region ap-southeast-1 | Out-File -FilePath $tokenFile -Encoding ascii -NoNewline
+                        # Get token as string
+                        $password = aws ecr get-login-password --region $region
+                        Write-Host "Token length: $($password.Length)"
 
-                        Write-Host "Token saved. Logging into ECR..."
-
-                        # Use temp file for docker login
-                        Get-Content $tokenFile | docker login --username AWS --password-stdin $ecrUrl
+                        # Login using --password flag directly (no pipe)
+                        docker login --username AWS --password $password $ecrUrl
 
                         if ($LASTEXITCODE -ne 0) {
                             Write-Host "Login failed!"
                             exit 1
                         }
 
-                        # Clean up temp file
-                        Remove-Item $tokenFile -Force
+                        Write-Host "Login successful!"
 
-                        Write-Host "Login successful! Tagging images..."
                         docker tag certverify-backend:latest "$ecrUrl/certverify-backend:latest"
                         docker tag certverify-frontend:latest "$ecrUrl/certverify-frontend:latest"
 
-                        Write-Host "Pushing backend..."
                         docker push "$ecrUrl/certverify-backend:latest"
+                        if ($LASTEXITCODE -ne 0) { exit 1 }
 
-                        Write-Host "Pushing frontend..."
                         docker push "$ecrUrl/certverify-frontend:latest"
+                        if ($LASTEXITCODE -ne 0) { exit 1 }
 
-                        Write-Host "Done! Images pushed to ECR successfully!"
+                        Write-Host "Done! Images pushed successfully!"
                     '''
                 }
             }
