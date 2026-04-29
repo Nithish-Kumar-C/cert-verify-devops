@@ -88,5 +88,6 @@ pipeline {
     post {
         success { echo 'Pipeline completed successfully! App live at http://13.212.14.169' }
         failure { echo 'Pipeline failed!' }
+    }
     
 }
