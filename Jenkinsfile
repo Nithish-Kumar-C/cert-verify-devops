@@ -68,11 +68,17 @@ pipeline {
                         $fixedKey = "$KEY.pem"
                         Get-Content $KEY | Out-File -Encoding ascii $fixedKey
 
-                        # Fix permissions
+                        # 🔐 STRICT permission fix (IMPORTANT)
                         icacls $fixedKey /inheritance:r
-                        icacls $fixedKey /grant:r "Everyone:R"
+                        icacls $fixedKey /reset
 
-                        # Single-line command (NO here-string)
+                        $jenkinsUser = whoami
+                        icacls $fixedKey /grant:r "$jenkinsUser:R"
+
+                        # Debug (optional but useful)
+                        icacls $fixedKey
+
+                        # Deployment command (single line)
                         $cmd = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && docker-compose pull && docker-compose up -d && sleep 30 && docker exec certverify-backend python manage.py migrate --no-input && echo Deployment Success"
 
                         ssh -i $fixedKey -o StrictHostKeyChecking=no ubuntu@$EC2_IP $cmd
@@ -87,7 +93,6 @@ pipeline {
                 }
             }
         }
-
 
 
     }
