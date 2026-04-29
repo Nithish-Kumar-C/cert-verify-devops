@@ -74,15 +74,15 @@ pipeline {
 
                         # Command to run on EC2
                         $cmd = @"
-        cd /home/ubuntu/certverify &&
-        aws ecr get-login-password --region ap-southeast-1 |
-        docker login --username AWS --password-stdin $ECR_URL &&
-        docker-compose pull &&
-        docker-compose up -d &&
-        sleep 30 &&
-        docker exec certverify-backend python manage.py migrate --no-input &&
-        echo Deployment Success
-        "@
+                        cd /home/ubuntu/certverify &&
+                        aws ecr get-login-password --region ap-southeast-1 |
+                        docker login --username AWS --password-stdin $ECR_URL &&
+                        docker-compose pull &&
+                        docker-compose up -d &&
+                        sleep 30 &&
+                        docker exec certverify-backend python manage.py migrate --no-input &&
+                        echo Deployment Success
+                        "@
 
                         ssh -i $fixedKey -o StrictHostKeyChecking=no ubuntu@$EC2_IP $cmd
 
