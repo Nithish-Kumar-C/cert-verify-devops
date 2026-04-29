@@ -64,23 +64,19 @@ pipeline {
                         $ECR_URL = "794383793240.dkr.ecr.ap-southeast-1.amazonaws.com"
                         $KEY = $env:SSH_KEY
 
-                        # Convert key
-                        $fixedKey = "$KEY.pem"
-                        Get-Content $KEY | Out-File -Encoding ascii $fixedKey
-
                         # FIX PERMISSIONS (FINAL)
-                        icacls $fixedKey /inheritance:r
-                        icacls $fixedKey /remove "BUILTIN\\Users" 2>$null
-                        icacls $fixedKey /remove "NT AUTHORITY\\Authenticated Users" 2>$null
-                        icacls $fixedKey /remove "Everyone" 2>$null
-                        icacls $fixedKey /grant "NT AUTHORITY\\SYSTEM:R"
+                        icacls $KEY /inheritance:r
+                        icacls $KEY /remove "BUILTIN\\Users" 2>$null
+                        icacls $KEY /remove "NT AUTHORITY\\Authenticated Users" 2>$null
+                        icacls $KEY /remove "Everyone" 2>$null
+                        icacls $KEY /grant "NT AUTHORITY\\SYSTEM:R"
 
-                        icacls $fixedKey
+                        icacls $KEY
 
                         # Deploy command
                         $cmd = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && docker-compose pull && docker-compose up -d && sleep 30 && docker exec certverify-backend python manage.py migrate --no-input && echo Deployment Success"
 
-                        ssh -i $fixedKey -o StrictHostKeyChecking=no ubuntu@$EC2_IP $cmd
+                        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$EC2_IP $cmd
 
                         if ($LASTEXITCODE -ne 0) {
                             Write-Host "Deployment failed!"
@@ -92,6 +88,7 @@ pipeline {
                 }
             }
         }
+
 
 
     }
