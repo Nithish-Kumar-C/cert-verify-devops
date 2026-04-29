@@ -64,25 +64,16 @@ pipeline {
                         $ECR_URL = "794383793240.dkr.ecr.ap-southeast-1.amazonaws.com"
                         $KEY = $env:SSH_KEY
 
-                        # Convert key to proper format (important fix)
+                        # Convert key to proper format
                         $fixedKey = "$KEY.pem"
                         Get-Content $KEY | Out-File -Encoding ascii $fixedKey
 
-                        # Fix permissions (simple + stable)
+                        # Fix permissions
                         icacls $fixedKey /inheritance:r
                         icacls $fixedKey /grant:r "Everyone:R"
 
-                        # Command to run on EC2
-                        $cmd = @"
-                        cd /home/ubuntu/certverify &&
-                        aws ecr get-login-password --region ap-southeast-1 |
-                        docker login --username AWS --password-stdin $ECR_URL &&
-                        docker-compose pull &&
-                        docker-compose up -d &&
-                        sleep 30 &&
-                        docker exec certverify-backend python manage.py migrate --no-input &&
-                        echo Deployment Success
-                        "@
+                        # Single-line command (NO here-string)
+                        $cmd = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && docker-compose pull && docker-compose up -d && sleep 30 && docker exec certverify-backend python manage.py migrate --no-input && echo Deployment Success"
 
                         ssh -i $fixedKey -o StrictHostKeyChecking=no ubuntu@$EC2_IP $cmd
 
@@ -96,6 +87,7 @@ pipeline {
                 }
             }
         }
+
 
 
     }
