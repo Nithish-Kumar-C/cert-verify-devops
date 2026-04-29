@@ -53,11 +53,26 @@ pipeline {
 
         stage('Deploy to EC2') {
             steps {
-                sshagent(['ec2-ssh-key']) {
+                withCredentials([
+                    sshUserPrivateKey(
+                        credentialsId: 'ec2-ssh-key',
+                        keyFileVariable: 'SSH_KEY'
+                    )
+                ]) {
                     powershell '''
                         $EC2_IP = "13.212.14.169"
                         $ECR_URL = "794383793240.dkr.ecr.ap-southeast-1.amazonaws.com"
+                        $KEY = $env:SSH_KEY
 
+                        # Convert key to proper format (important fix)
+                        $fixedKey = "$KEY.pem"
+                        Get-Content $KEY | Out-File -Encoding ascii $fixedKey
+
+                        # Fix permissions (simple + stable)
+                        icacls $fixedKey /inheritance:r
+                        icacls $fixedKey /grant:r "Everyone:R"
+
+                        # Command to run on EC2
                         $cmd = @"
         cd /home/ubuntu/certverify &&
         aws ecr get-login-password --region ap-southeast-1 |
@@ -66,14 +81,22 @@ pipeline {
         docker-compose up -d &&
         sleep 30 &&
         docker exec certverify-backend python manage.py migrate --no-input &&
-        echo Done!
+        echo Deployment Success
         "@
 
-                        ssh -o StrictHostKeyChecking=no ubuntu@$EC2_IP $cmd
+                        ssh -i $fixedKey -o StrictHostKeyChecking=no ubuntu@$EC2_IP $cmd
+
+                        if ($LASTEXITCODE -ne 0) {
+                            Write-Host "Deployment failed!"
+                            exit 1
+                        }
+
+                        Write-Host "Deployment SUCCESS!"
                     '''
                 }
             }
         }
+
 
     }
 
