@@ -64,32 +64,44 @@ pipeline {
                         $ECR_URL = "794383793240.dkr.ecr.ap-southeast-1.amazonaws.com"
                         $KEY = $env:SSH_KEY
 
-                        # FIX PERMISSIONS (FINAL)
+                        # Fix permissions
                         icacls $KEY /inheritance:r
                         icacls $KEY /remove "BUILTIN\\Users" 2>$null
-                        icacls $KEY /remove "NT AUTHORITY\\Authenticated Users" 2>$null
                         icacls $KEY /remove "Everyone" 2>$null
                         icacls $KEY /grant "NT AUTHORITY\\SYSTEM:R"
 
-                        icacls $KEY
+                        # Create deploy script
+                        $script = @"
+        #!/bin/bash
+        set -e
+        cd /home/ubuntu/certverify
+        aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL
+        export COMPOSE_HTTP_TIMEOUT=300
+        docker-compose pull
+        docker-compose up -d
+        sleep 40
+        docker exec certverify-backend python manage.py migrate --no-input
+        echo "Deployment Success!"
+        "@
 
-                        # Deploy command
-                        $cmd = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && docker-compose pull && docker-compose up -d && sleep 30 && docker exec certverify-backend python manage.py migrate --no-input && echo Deployment Success"
+                        # Save script to temp file
+                        $script | Out-File -FilePath "deploy.sh" -Encoding ASCII
 
-                        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$EC2_IP $cmd
+                        # Copy script to EC2
+                        scp -i $KEY -o StrictHostKeyChecking=no deploy.sh ubuntu@${EC2_IP}:/home/ubuntu/deploy.sh
+
+                        # Run script on EC2
+                        ssh -i $KEY -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=10 ubuntu@$EC2_IP "chmod +x /home/ubuntu/deploy.sh && bash /home/ubuntu/deploy.sh"
 
                         if ($LASTEXITCODE -ne 0) {
                             Write-Host "Deployment failed!"
                             exit 1
                         }
-
-                        Write-Host "Deployment SUCCESS!"
+                        Write-Host "Deployed successfully!"
                     '''
                 }
             }
         }
-
-
 
     }
 
