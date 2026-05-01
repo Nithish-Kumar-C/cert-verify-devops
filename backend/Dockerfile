@@ -9,4 +9,4 @@ RUN pip install -r requirements.txt
 RUN pip install web3==6.15.1
 COPY . .
 EXPOSE 8000
-CMD ["sh", "-c", "python manage.py migrate --no-input && gunicorn cert_verify.wsgi:application --bind 0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py migrate --no-input & gunicorn cert_verify.wsgi:application --bind 0.0.0.0:8000"]
