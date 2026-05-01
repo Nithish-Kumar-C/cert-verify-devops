@@ -69,8 +69,7 @@ pipeline {
                         icacls $KEY /remove "Everyone" 2>$null
                         icacls $KEY /grant "NT AUTHORITY\\SYSTEM:R"
 
-                        $deployScript = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && export COMPOSE_HTTP_TIMEOUT=300 && docker-compose down && docker-compose pull && docker-compose up -d --force-recreate && sleep 60 && docker-compose exec -T backend python manage.py migrate --no-input && echo Done"
-
+                        $deployScript = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && export COMPOSE_HTTP_TIMEOUT=300 && docker-compose down && docker-compose pull && docker-compose up -d --force-recreate && sleep 90 && docker exec certverify-backend python manage.py migrate --no-input && echo Done"
                         $deployScript | Out-File -FilePath "deploy.sh" -Encoding ASCII -NoNewline
 
                         scp -i $KEY -o StrictHostKeyChecking=no deploy.sh ubuntu@${EC2_IP}:/home/ubuntu/deploy.sh
