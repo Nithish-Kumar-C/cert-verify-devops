@@ -22,6 +22,6 @@ CMD ["sh", "-c", "\
 echo 'Waiting for MySQL...' && \
 until nc -z db 3306; do sleep 2; done && \
 echo 'MySQL ready' && \
-python manage.py migrate --no-input && \
+python manage.py migrate --fake-initial --no-input || true && \
 gunicorn cert_verify.wsgi:application --bind 0.0.0.0:8000 \
 "]
