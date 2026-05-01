@@ -69,7 +69,7 @@ pipeline {
                         icacls $KEY /remove "Everyone" 2>$null
                         icacls $KEY /grant "NT AUTHORITY\\SYSTEM:R"
 
-                        $deployScript = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && export COMPOSE_HTTP_TIMEOUT=300 && docker-compose down -v && docker-compose up -d db && echo 'Waiting for MySQL...' && until docker exec certverify-db mysqladmin ping -h localhost -u root -prootpass123 --silent; do sleep 5; done && echo 'MySQL ready!' && docker-compose up -d backend frontend && sleep 20 && docker exec certverify-backend python manage.py migrate --no-input && echo Done"
+                        $deployScript = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && docker-compose down && docker-compose pull && docker-compose up -d"
 
                         scp -i $KEY -o StrictHostKeyChecking=no deploy.sh ubuntu@${EC2_IP}:/home/ubuntu/deploy.sh
 
