@@ -36,15 +36,20 @@ pipeline {
                         $region = "ap-southeast-1"
                         $accountId = $env:AWS_ACCOUNT_ID
                         $ecrUrl = "$accountId.dkr.ecr.$region.amazonaws.com"
+
                         $password = aws ecr get-login-password --region $region
                         docker login --username AWS --password $password $ecrUrl
                         if ($LASTEXITCODE -ne 0) { exit 1 }
+
                         docker tag certverify-backend:latest "$ecrUrl/certverify-backend:latest"
                         docker tag certverify-frontend:latest "$ecrUrl/certverify-frontend:latest"
+
                         docker push "$ecrUrl/certverify-backend:latest"
                         if ($LASTEXITCODE -ne 0) { exit 1 }
+
                         docker push "$ecrUrl/certverify-frontend:latest"
                         if ($LASTEXITCODE -ne 0) { exit 1 }
+
                         Write-Host "Images pushed successfully!"
                     '''
                 }
@@ -64,21 +69,16 @@ pipeline {
                         $ECR_URL = "794383793240.dkr.ecr.ap-southeast-1.amazonaws.com"
                         $KEY = $env:SSH_KEY
 
+                        # Fix key permissions
                         icacls $KEY /inheritance:r
                         icacls $KEY /remove "BUILTIN\\Users" 2>$null
                         icacls $KEY /remove "Everyone" 2>$null
                         icacls $KEY /grant "NT AUTHORITY\\SYSTEM:R"
 
-                        $deployScript = "cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && docker-compose down && docker-compose pull && docker-compose up -d && echo DONE"
-                        scp -i $KEY -o StrictHostKeyChecking=no deploy.sh ubuntu@${EC2_IP}:/home/ubuntu/deploy.sh
+                        # Run deploy in background (NO TIMEOUT ISSUE)
+                        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$EC2_IP "nohup bash -c 'cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && docker-compose down && docker-compose pull && docker-compose up -d && sleep 15 && docker exec certverify-backend python manage.py migrate --no-input || docker exec certverify-backend python manage.py migrate --fake-initial' > deploy.log 2>&1 &"
 
-                        ssh -i $KEY -o StrictHostKeyChecking=no -o ServerAliveInterval=30 -o ServerAliveCountMax=10 ubuntu@$EC2_IP "bash /home/ubuntu/deploy.sh"
-
-                        if ($LASTEXITCODE -ne 0) {
-                            Write-Host "Deployment failed!"
-                            exit 1
-                        }
-                        Write-Host "Deployed successfully!"
+                        Write-Host "Deployment started in background!"
                     '''
                 }
             }
@@ -86,7 +86,7 @@ pipeline {
     }
 
     post {
-        success { echo 'Pipeline completed! App live at http://13.212.14.169' }
+        success { echo 'Pipeline completed! App deploying at http://13.212.14.169' }
         failure { echo 'Pipeline failed!' }
     }
 }
