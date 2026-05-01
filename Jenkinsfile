@@ -79,6 +79,7 @@ pipeline {
                         # Run deploy in background (NO TIMEOUT ISSUE)
                         ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$EC2_IP "
                         cd /home/ubuntu/certverify && \
+                        export COMPOSE_HTTP_TIMEOUT=300 && \
                         aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && \
                         docker-compose down -v && \
                         docker system prune -af && \
@@ -86,6 +87,7 @@ pipeline {
                         docker-compose up -d && \
                         echo 'DEPLOY DONE'
                         "
+
 
 
                         Write-Host "Deployment started in background!"
