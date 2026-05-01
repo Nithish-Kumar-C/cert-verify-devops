@@ -17,7 +17,8 @@ pipeline {
 
         stage('Build Frontend') {
             steps {
-                powershell 'docker build -t certverify-frontend ./frontend'
+                powershell 'docker build --no-cache -t certverify-frontend ./frontend'
+
             }
         }
 
