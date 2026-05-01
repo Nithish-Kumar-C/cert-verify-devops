@@ -76,7 +76,8 @@ pipeline {
                         icacls $KEY /grant "NT AUTHORITY\\SYSTEM:R"
 
                         # Run deploy in background (NO TIMEOUT ISSUE)
-                        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$EC2_IP "nohup bash -c 'cd /home/ubuntu/certverify && aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && docker-compose down && docker-compose pull && docker-compose up -d && sleep 15 && docker exec certverify-backend python manage.py migrate --no-input || docker exec certverify-backend python manage.py migrate --fake-initial' > deploy.log 2>&1 &"
+                        ssh -i $KEY -o StrictHostKeyChecking=no ubuntu@$EC2_IP "cd /home/ubuntu/certverify && echo '=== DOCKER PS ===' && docker ps && echo '=== BACKEND LOGS ===' && docker logs certverify-backend --tail 50 && echo '=== FRONTEND LOGS ===' && docker logs certverify-frontend --tail 50"
+
 
                         Write-Host "Deployment started in background!"
                     '''
