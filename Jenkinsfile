@@ -81,12 +81,13 @@ pipeline {
                         cd /home/ubuntu/certverify && \
                         export COMPOSE_HTTP_TIMEOUT=300 && \
                         aws ecr get-login-password --region ap-southeast-1 | docker login --username AWS --password-stdin $ECR_URL && \
-                        docker-compose down -v && \
-                        docker system prune -af && \
+                        docker-compose down && \
+                        docker image prune -af && \
                         docker-compose pull && \
-                        docker-compose up -d && \
+                        docker-compose up -d --force-recreate && \
                         echo 'DEPLOY DONE'
                         "
+
 
 
 
